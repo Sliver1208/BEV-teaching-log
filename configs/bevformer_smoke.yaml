@@ -1,0 +1,74 @@
+# ============================================================
+# BEVFormer CPU 冒烟配置
+# 目的：纯 CPU 十几分钟跑通训练，亲眼看到 loss 下降
+# 调小了：图像尺寸 / 数据量 / 序列长度 / epoch 数
+# 模型结构与 bevformer_base.yaml 完全一致
+# ============================================================
+
+seed: 42
+device: cpu
+work_dir: ./work_dirs/bevformer_smoke
+print_freq: 2
+save_freq: 5
+
+bev:
+  H: 50
+  W: 50
+  Z: 1
+  x_bound: [-50, 50]
+  y_bound: [-50, 50]
+  z_bound: [-10, 10]
+  embed_dims: 256
+
+image:
+  img_h: 128          # 256 -> 128，卷积量降到约 1/4
+  img_w: 128
+  num_cams: 6
+  feat_strides: [16]
+
+model:
+  bev_query:
+    type: learnable
+    num_query: null
+  image_backbone:
+    type: SimpleResNet
+    out_indices: [3]
+  image_neck:
+    type: FPN
+    out_channels: 256
+  num_layers: 3
+  spatial_cross_attn:
+    embed_dims: 256
+    num_heads: 4
+    num_levels: 1
+    num_points: 4
+  temporal_self_attn:
+    embed_dims: 256
+    num_heads: 4
+    num_history_frames: 3
+  ffn:
+    embed_dims: 256
+    feedforward_dims: 512
+    dropout: 0.1
+  head:
+    num_classes: 3
+    hidden_dim: 256
+
+train:
+  batch_size: 2
+  num_workers: 0
+  epochs: 5            # 5 个 epoch 足够看到明显下降
+  lr: 2.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler:
+    type: CosineAnnealingLR
+    T_max: 5
+
+data:
+  type: SyntheticDataset
+  num_samples: 16      # 100 -> 16，每 epoch 8 个 iter
+  sequence_length: 2   # 4 -> 2，时序融合仍保留
+
+vis:
+  enabled: true
+  save_dir: ./vis_results

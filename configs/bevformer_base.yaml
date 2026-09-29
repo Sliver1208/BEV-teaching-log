@@ -1,0 +1,96 @@
+# ============================================================
+# BEVFormer 基础配置文件
+# 学习工程版本：所有参数都附带中文注释便于理解
+# ============================================================
+
+# ---------- 全局配置 ----------
+seed: 42
+device: cuda          # cuda 或 cpu
+work_dir: ./work_dirs/bevformer_base
+print_freq: 20
+save_freq: 5
+
+# ---------- BEV 空间配置 ----------
+# 这些参数定义了 BEV 网格的大小和范围
+# 是 BEV Query 和注意力机制的基础
+bev:
+  H: 50               # BEV 网格高度（沿 X 轴，车辆前方）
+  W: 50               # BEV 网格宽度（沿 Y 轴，车辆左右）
+  Z: 1                # BEV 网格高度（一般 1 层，多用途则增大）
+  # 物理世界范围（单位：米，以自车为原点）
+  x_bound: [-50, 50]  # 前后方向范围（前正后负）
+  y_bound: [-50, 50]  # 左右方向范围（左正右负）
+  z_bound: [-10, 10]  # 上下方向范围
+  embed_dims: 256     # BEV Query 的特征维度
+
+# ---------- 图像配置 ----------
+image:
+  img_h: 256
+  img_w: 256
+  num_cams: 6          # nuScenes 有 6 个相机
+  feat_strides: [16]   # 图像 backbone 的下采样倍率
+
+# ---------- 模型配置 ----------
+model:
+  # BEV Query
+  bev_query:
+    type: learnable    # learnable（可学习） or geometry（几何锚定）
+    num_query: null    # 设为 null 则自动为 H*W*Z
+
+  # 图像 Backbone + Neck
+  image_backbone:
+    type: SimpleResNet  # 简化版 ResNet，教学用
+    out_indices: [2]    # 用第3阶段的特征（stride16，16x16，采样信号更清晰）
+  image_neck:
+    type: FPN
+    out_channels: 256
+
+  # BEV Encoder 层数（每一层 = SCA + TSA + FFN）
+  num_layers: 3
+
+  # 空间交叉注意力（SCA）
+  spatial_cross_attn:
+    embed_dims: 256
+    num_heads: 4
+    num_levels: 1      # 单尺度特征（简化版）
+    num_points: 8      # 每个 reference point 采样的点数（初始呈网格散开，避免冷启动采不到目标）
+
+  # 时间自注意力（TSA）
+  temporal_self_attn:
+    embed_dims: 256
+    num_heads: 4
+    num_history_frames: 3  # 融合过去几帧
+
+  # FFN
+  ffn:
+    embed_dims: 256
+    feedforward_dims: 512
+    dropout: 0.1
+
+  # 检测头（简化版：预测 BEV 网格上的分类与中心偏移）
+  head:
+    num_classes: 3     # car, pedestrian, cyclist
+    hidden_dim: 256
+
+# ---------- 训练配置 ----------
+train:
+  batch_size: 2
+  num_workers: 0       # Windows 下建议 0，避免多进程问题
+  epochs: 30
+  lr: 2.0e-4
+  weight_decay: 1.0e-4
+  lr_scheduler:
+    type: CosineAnnealingLR
+    T_max: 30
+
+# ---------- 数据集配置 ----------
+data:
+  type: SyntheticDataset    # 使用合成数据便于快速跑通（无真实数据也能学习）
+  # 如需真实数据，可改为 NuScenesDataset 并配置 data_root
+  num_samples: 100          # 合成数据量
+  sequence_length: 4        # 每段序列帧数（用于时序融合）
+
+# ---------- 可视化配置 ----------
+vis:
+  enabled: true
+  save_dir: ./vis_results

@@ -1,0 +1,33 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# ===== 本地虚拟环境（4.8GB，不入库）=====
+.conda/
+
+# ===== 训练产物（checkpoint 547MB，不入库）=====
+work_dirs/
+*.pth
+*.pt
+
+# ===== 第三方嵌套仓库（mmdet3d 参考源码，自带 .git，不入库）=====
+mmdet3d_original/
+mmdet3d_v0.18/
+
+# ===== 临时/调试文件 =====
+_probe_tmp.py
+*.log
+.tmp/
+
+# ===== 压缩包与系统字体（Windows/macOS 自带，PDF 已内嵌子集）=====
+*.zip
+*.ttf
+*.ttc
+
+# ===== IDE / 系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
